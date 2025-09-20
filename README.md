@@ -5,7 +5,7 @@
 
 <h1>Compiling</h1>
 
-The starting file is `main.del`.
+The starting file is `main.ostw`.
 
 <h2>Binary</h2>
 <b>Prerequisites:</b>
@@ -14,7 +14,7 @@ The starting file is `main.del`.
 </ul>
 
 <b>Compiling:</b>
-<p>Open <code>main.del</code> using <code>Deltinteger.exe</code> via the command line or by dragging the file onto the executable to compile.</p>
+<p>Open <code>main.ostw</code> using <code>Deltinteger.exe</code> via the command line or by dragging the file onto the executable to compile.</p>
 
 <h2>VSCode</h2>
 <b>Prerequisites:</b>
@@ -25,5 +25,5 @@ The starting file is `main.del`.
 <b>Compiling:</b>
 <ol>
   <li>Install the extension</li>
-  <li>Open <code>main.del</code> and compile using the shortcut <code>CTRL + ALT + S</code></li>
+  <li>Open <code>main.ostw</code> and compile using the shortcut <code>CTRL + ALT + S</code></li>
 </ol>
