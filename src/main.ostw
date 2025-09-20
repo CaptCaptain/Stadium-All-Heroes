@@ -185,7 +185,7 @@ rule: '[main.ostw] Mode Info'
 	# Title and Instructions
 	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), EvaluateOnce(""), EvaluateOnce(TextColor.Orange("{0} Stadium: All Heroes".Format([TX.getString("C0000000006295C")]))), Location.Top, 2, Color.Orange, Color.Orange, Color.Orange, HudTextRev.VisibleToAndString);
 	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), "[{0}] (Hold) Change Heroes".Format([InputBindingString(GameSettings.HeroSwapButton)]), EvaluateOnce(""), Location.Top, 3, EvaluateOnce(Color.White), IsButtonHeld(LocalPlayer(), GameSettings.HeroSwapButton) ? EvaluateOnce(Color.Orange) : EvaluateOnce(Color.White), EvaluateOnce(Color.White), HudTextRev.VisibleToStringAndColor);
-	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), "[{0}] (Hold) Quick Start".Format([InputBindingString(GameSettings.QuickStartButton)]), EvaluateOnce(""), Location.Top, 3, EvaluateOnce(Color.White), IsButtonHeld(LocalPlayer(), GameSettings.QuickStartButton) ? EvaluateOnce(Color.Orange) : EvaluateOnce(Color.White), EvaluateOnce(Color.White), HudTextRev.VisibleToStringAndColor);
+	CreateHudText(LocalPlayer() == HostPlayer() && IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), "[{0}] (Hold) Quick Start".Format([InputBindingString(GameSettings.QuickStartButton)]), EvaluateOnce(""), Location.Top, 3, EvaluateOnce(Color.White), IsButtonHeld(LocalPlayer(), GameSettings.QuickStartButton) ? EvaluateOnce(Color.Orange) : EvaluateOnce(Color.White), EvaluateOnce(Color.White), HudTextRev.VisibleToStringAndColor);
 	quickStartTextID = LastTextID();
 
 	# Gameplay Changes
