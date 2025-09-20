@@ -74,7 +74,7 @@ single struct PlayerSpawn {
 single struct PerkGenerator {
 	public Player Team1Dummy;
 	public Player Team2Dummy;
-	public static Number PerkIndex;
+	public static Number perkIndex;
 
 	public static PerkGenerator Create(in Player team1Dummy, in Player team2Dummy): {
 		Team1Dummy: team1Dummy,
@@ -99,14 +99,14 @@ single struct PerkGenerator {
 		SetStatus(thisGenerator.Team1Dummy, null, Status.Unkillable, 10000);
 		SetStatus(thisGenerator.Team2Dummy, null, Status.Unkillable, 10000);
 
-		for (PerkIndex = 0; 5; 1) {
-			StartDamageOverTime(thisGenerator.Team1Dummy, PlayersInSlot(PerkIndex, Team.Team2), 10000, 10000);
-			StartDamageOverTime(thisGenerator.Team2Dummy, PlayersInSlot(PerkIndex, Team.Team1), 10000, 10000);
+		for (perkIndex = 0; 5; 1) {
+			StartDamageOverTime(thisGenerator.Team1Dummy, PlayersInSlot(perkIndex, Team.Team2), 10000, 10000);
+			StartDamageOverTime(thisGenerator.Team2Dummy, PlayersInSlot(perkIndex, Team.Team1), 10000, 10000);
 
-			StartHealOverTime(thisGenerator.Team1Dummy, PlayersInSlot(PerkIndex, Team.Team1), 10000, 10000);
-			StartHealOverTime(thisGenerator.Team2Dummy, PlayersInSlot(PerkIndex, Team.Team2), 10000, 10000);
+			StartHealOverTime(thisGenerator.Team1Dummy, PlayersInSlot(perkIndex, Team.Team1), 10000, 10000);
+			StartHealOverTime(thisGenerator.Team2Dummy, PlayersInSlot(perkIndex, Team.Team2), 10000, 10000);
 
-			LogToInspector("Perk Generator: Setup Perk DoT + HoT for " + PlayersInSlot(PerkIndex, Team.Team1) + " and " + PlayersInSlot(PerkIndex, Team.Team2) + ".");
+			LogToInspector("Perk Generator: Setup Perk DoT + HoT for " + PlayersInSlot(perkIndex, Team.Team1) + " and " + PlayersInSlot(perkIndex, Team.Team2) + ".");
 		}
 
 		return PerkGenerator.Create(thisGenerator.Team1Dummy, thisGenerator.Team2Dummy);
@@ -125,8 +125,50 @@ single struct PerkGenerator {
 	}
 }
 
+class GameSettings {
+	private static Button[] AllButtons = [
+		Button.PrimaryFire,
+		Button.SecondaryFire,
+		Button.Ability1,
+		Button.Ability2,
+		Button.Ultimate,
+		Button.Reload,
+		Button.Interact
+	];
+	private static String[] AllButtonNames: [
+		"Primary Fire",
+		"Secondary Fire",
+		"Ability 1",
+		"Ability 2",
+		"Ultimate",
+		"Reload",
+		"Interact"
+	];
+
+	public static Button QuickStartButton = AllButtons[WorkshopSettingCombo("Controls", "Quick Start Button", 4, AllButtonNames, 2)];
+	public static Button HeroSwapButton = AllButtons[WorkshopSettingCombo("Controls", "Hero Swap Button", 5, AllButtonNames, 1)];
+}
+
 playervar PlayerSpawn playerSpawn;
 globalvar PerkGenerator perkGenerator;
+globalvar Number quickStartTextID;
+
+rule: '[main.ostw] Quick Start'
+if (IsButtonHeld(Player: HostPlayer(), Button: GameSettings.QuickStartButton))
+{
+	Wait(0.25, WaitBehavior.AbortWhenFalse);
+	if (IsGameInProgress()) return;
+	if (!IsInSpawnRoom(HostPlayer())) return;
+
+	StartGameMode();
+}
+
+rule: '[main.ostw] Remove Quick Start Text'
+{
+	WaitUntil(IsGameInProgress(), 9999);
+	
+	DestroyHudText(quickStartTextID);
+}
 
 rule: '[main.ostw] Set Allowed Heroes'
 Event.OngoingPlayer
@@ -136,13 +178,15 @@ Player.All
     SetAllowedHeroes(EventPlayer(), AllHeroes());
 }
 
-rule: '[main.ostw] Hero Select Info'
+rule: '[main.ostw] Mode Info'
 {
 	WaitUntil(TX.isReady(), 9999);
 	
 	# Title and Instructions
 	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), EvaluateOnce(""), EvaluateOnce(TextColor.Orange("{0} Stadium: All Heroes".Format([TX.getString("C0000000006295C")]))), Location.Top, 2, Color.Orange, Color.Orange, Color.Orange, HudTextRev.VisibleToAndString);
-	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), "[{0}] (Hold) Change Heroes".Format([InputBindingString(Button.Reload)]), EvaluateOnce(""), Location.Top, 3, Color.White, Color.White, Color.White, HudTextRev.VisibleToAndString);
+	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), "[{0}] (Hold) Change Heroes".Format([InputBindingString(GameSettings.HeroSwapButton)]), EvaluateOnce(""), Location.Top, 3, EvaluateOnce(Color.White), IsButtonHeld(LocalPlayer(), GameSettings.HeroSwapButton) ? EvaluateOnce(Color.Orange) : EvaluateOnce(Color.White), EvaluateOnce(Color.White), HudTextRev.VisibleToStringAndColor);
+	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), "[{0}] (Hold) Quick Start".Format([InputBindingString(GameSettings.QuickStartButton)]), EvaluateOnce(""), Location.Top, 3, EvaluateOnce(Color.White), IsButtonHeld(LocalPlayer(), GameSettings.QuickStartButton) ? EvaluateOnce(Color.Orange) : EvaluateOnce(Color.White), EvaluateOnce(Color.White), HudTextRev.VisibleToStringAndColor);
+	quickStartTextID = LastTextID();
 
 	# Gameplay Changes
 	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), EvaluateOnce(""), EvaluateOnce(TX.getString("C0000000005E4F0") + TextColor.Orange(" | Modifiers") + Text.leftAlignString()), Location.Left, 2, Color.Orange, Color.Orange, Color.Orange, HudTextRev.VisibleToAndString);
@@ -161,7 +205,7 @@ rule: '[main.ostw] Force into Hero Select'
 Event.OngoingPlayer
 Team.All
 Player.All
-if (IsButtonHeld(Button: Button.Reload))
+if (IsButtonHeld(Button: GameSettings.HeroSwapButton))
 if (IsInSpawnRoom(EventPlayer()))
 {
 	Wait(0.25, WaitBehavior.AbortWhenFalse);
