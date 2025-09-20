@@ -166,6 +166,7 @@ if (IsButtonHeld(Player: HostPlayer(), Button: GameSettings.QuickStartButton))
 rule: '[main.ostw] Remove Quick Start Text'
 {
 	WaitUntil(IsGameInProgress(), 9999);
+	WaitUntil(quickStartTextID != null, 9999);
 	
 	DestroyHudText(quickStartTextID);
 }
