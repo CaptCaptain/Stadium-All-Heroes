@@ -1,0 +1,197 @@
+settings
+{
+	main
+	{
+		Mode Name: "Stadium: All Heroes"
+		Description: "Play Stadium with all Heroes available!\n• Both Stadium and Non-Stadium Heroes use Perks instead of Powers and Items. All Heroes gain Perks after setup.\n• Switch heroes at any time in spawn.\n\nMode by CaptCaptain#11421\nMode Page: workshop.codes/stadium-all-heroes\nLearn Workshop at: workshop.codes/discord"
+	}
+	
+	lobby
+	{
+		Return To Lobby: Never
+		Team Balancing: After A Game
+	}
+
+	modes
+	{
+		Clash
+		{
+		}
+
+		Control
+		{
+		}
+
+		Payload Race
+		{
+		}
+
+		Push
+		{
+		}
+
+		General
+		{
+			Game Mode Start: Immediately
+			Armory Duration Scalar: 50%
+			Bounty Cash Scalar: 1%
+			Enable Perks: On
+			Perk Generation: 500%
+			Perk Elimination Catchup Level Amount: 100%
+			Mercy Rule Cash Delta: 100000
+			Damage Cash Scalar: 1%
+			Healing Cash Scalar: 1%
+			Item Cost Scalar: 500%
+			Limit Roles: 1 Tank 2 Offense 2 Support
+			Minimum Round Earnings: 0
+			MVP Bonus Cash: 0
+			Power 1 Unlock Round: 20
+			Power 2 Unlock Round: 20
+			Power 3 Unlock Round: 20
+			Power 4 Unlock Round: 20
+			Round Complete Cash Scalar: 0%
+			Score to Win: 3
+			Starting Cash: 0
+			Tank Role Passive Health Bonus: Always Enabled
+		}
+	}
+}
+
+import "txBypass.del";
+import "textColor.del";
+import "text.del";
+
+single struct PlayerSpawn {
+	public Vector facingDirection;
+	public Vector position;
+
+	public static PlayerSpawn Create(in Vector facingDirection, in Vector position): {
+		facingDirection: facingDirection,
+		position: position
+	};
+}
+
+single struct PerkGenerator {
+	public Player Team1Dummy;
+	public Player Team2Dummy;
+	public static Number PerkIndex;
+
+	public static PerkGenerator Create(in Player team1Dummy, in Player team2Dummy): {
+		Team1Dummy: team1Dummy,
+		Team2Dummy: team2Dummy
+	};
+
+	public static PerkGenerator Setup(ref PerkGenerator thisGenerator) {
+		CreateDummyBot(Hero.Roadhog, Team.Team1, 5, Up() * 1000, null);
+		thisGenerator.Team1Dummy = LastCreatedEntity();
+
+		CreateDummyBot(Hero.Roadhog, Team.Team2, 5, Up() * 1000, null);
+		thisGenerator.Team2Dummy = LastCreatedEntity();
+
+		StartForcingDummyBotName(thisGenerator.Team1Dummy, "Perk Generator");
+		StartForcingDummyBotName(thisGenerator.Team2Dummy, "Perk Generator");
+		SetMaxHealth(thisGenerator.Team1Dummy, 10000);
+		SetMaxHealth(thisGenerator.Team2Dummy, 10000);
+		AddHealthPoolToPlayer(thisGenerator.Team1Dummy, HealthType.Health, 10000, true, false);
+		AddHealthPoolToPlayer(thisGenerator.Team2Dummy, HealthType.Health, 10000, true, false);
+		StartForcingPlayerPosition(thisGenerator.Team1Dummy, Up() * 1000, true);
+		StartForcingPlayerPosition(thisGenerator.Team2Dummy, Up() * 1000, true);
+		SetStatus(thisGenerator.Team1Dummy, null, Status.Unkillable, 10000);
+		SetStatus(thisGenerator.Team2Dummy, null, Status.Unkillable, 10000);
+
+		for (PerkIndex = 0; 5; 1) {
+			StartDamageOverTime(thisGenerator.Team1Dummy, PlayersInSlot(PerkIndex, Team.Team2), 10000, 10000);
+			StartDamageOverTime(thisGenerator.Team2Dummy, PlayersInSlot(PerkIndex, Team.Team1), 10000, 10000);
+
+			StartHealOverTime(thisGenerator.Team1Dummy, PlayersInSlot(PerkIndex, Team.Team1), 10000, 10000);
+			StartHealOverTime(thisGenerator.Team2Dummy, PlayersInSlot(PerkIndex, Team.Team2), 10000, 10000);
+
+			LogToInspector("Perk Generator: Setup Perk DoT + HoT for " + PlayersInSlot(PerkIndex, Team.Team1) + " and " + PlayersInSlot(PerkIndex, Team.Team2) + ".");
+		}
+
+		return PerkGenerator.Create(thisGenerator.Team1Dummy, thisGenerator.Team2Dummy);
+	}
+
+	public static void Destroy(ref PerkGenerator thisGenerator) {
+		StopAllDamageOverTime(thisGenerator.Team1Dummy);
+		StopAllHealOverTime(thisGenerator.Team2Dummy);
+
+		DestroyDummyBot(Team.Team1, SlotOf(thisGenerator.Team1Dummy));
+		DestroyDummyBot(Team.Team2, SlotOf(thisGenerator.Team2Dummy));
+
+		thisGenerator = null;
+
+		LogToInspector("Perk Generator Destroyed.");
+	}
+}
+
+playervar PlayerSpawn playerSpawn;
+globalvar PerkGenerator perkGenerator;
+
+rule: '[main.ostw] Set Allowed Heroes'
+Event.OngoingPlayer
+Team.All
+Player.All
+{
+    SetAllowedHeroes(EventPlayer(), AllHeroes());
+}
+
+rule: '[main.ostw] Hero Select Info'
+{
+	WaitUntil(TX.isReady(), 9999);
+	
+	# Title and Instructions
+	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), EvaluateOnce(""), EvaluateOnce(TextColor.Orange("{0} Stadium: All Heroes".Format([TX.getString("C0000000006295C")]))), Location.Top, 2, Color.Orange, Color.Orange, Color.Orange, HudTextRev.VisibleToAndString);
+	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), "[{0}] (Hold) Change Heroes".Format([InputBindingString(Button.Reload)]), EvaluateOnce(""), Location.Top, 3, Color.White, Color.White, Color.White, HudTextRev.VisibleToAndString);
+
+	# Gameplay Changes
+	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), EvaluateOnce(""), EvaluateOnce(TX.getString("C0000000005E4F0") + TextColor.Orange(" | Modifiers") + Text.leftAlignString()), Location.Left, 2, Color.Orange, Color.Orange, Color.Orange, HudTextRev.VisibleToAndString);
+	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), EvaluateOnce("• " + TextColor.Orange("Perks") + " enabled and unlocked after setup" + Text.leftAlignString()), EvaluateOnce(""), Location.Left, 3, Color.White, Color.White, Color.White, HudTextRev.VisibleToAndString);
+	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), EvaluateOnce("• " + TextColor.Orange("Armory") + " Disabled" + Text.leftAlignString()), EvaluateOnce(""), Location.Left, 3, Color.White, Color.White, Color.White, HudTextRev.VisibleToAndString);
+
+	# Credits
+	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), EvaluateOnce("Mode by CaptCaptain#11421"), EvaluateOnce(""), Location.Right, 2, Color.White, Color.White, Color.White, HudTextRev.VisibleToAndString);
+	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), EvaluateOnce(TextColor.Orange("MMDRF")), EvaluateOnce(""), Location.Right, 3, Color.Orange, Color.Orange, Color.Orange, HudTextRev.VisibleToAndString);
+	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), EvaluateOnce("More Info at:"), EvaluateOnce(""), Location.Right, 4, Color.White, Color.White, Color.White, HudTextRev.VisibleToAndString);
+	CreateHudText(IsInSpawnRoom(LocalPlayer()) ? LocalPlayer() : EvaluateOnce([]),  EvaluateOnce(""), EvaluateOnce(TextColor.Orange("workshop.codes/stadium-all-heroes")), EvaluateOnce(""), Location.Right, 5, Color.Orange, Color.Orange, Color.Orange, HudTextRev.VisibleToAndString);
+}
+
+
+rule: '[main.ostw] Force into Hero Select'
+Event.OngoingPlayer
+Team.All
+Player.All
+if (IsButtonHeld(Button: Button.Reload))
+if (IsInSpawnRoom(EventPlayer()))
+{
+	Wait(0.25, WaitBehavior.AbortWhenFalse);
+
+	playerSpawn = PlayerSpawn.Create(FacingDirectionOf(EventPlayer()), PositionOf(EventPlayer()));
+	SetAllowedHeroes(EventPlayer(), AllHeroes().Remove(HeroOf(EventPlayer())));
+	SetAllowedHeroes(EventPlayer(), AllHeroes());
+
+	LogToInspector("Player " + EventPlayer() + " has forced hero select.");
+
+	Wait(0.016);
+
+	WaitUntil(HasSpawned(EventPlayer()) && IsInSpawnRoom(EventPlayer()), 9999);
+
+	Teleport(EventPlayer(), playerSpawn.position);
+	SetFacing(EventPlayer(), playerSpawn.facingDirection);
+
+	LogToInspector("Player " + EventPlayer() + " has respawned.");
+}
+
+rule: '[main.ostw] Grant Base Perk Progress at the Start of the Round'
+if (IsGameInProgress())
+{
+	WaitUntil(MatchTime() <= 0, 9999);
+	
+	perkGenerator = PerkGenerator.Setup(perkGenerator);
+
+	Wait(2);
+
+	PerkGenerator.Destroy(perkGenerator);
+
+	Wait(9999);
+}
