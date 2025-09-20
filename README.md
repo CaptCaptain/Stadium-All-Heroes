@@ -1,9 +1,5 @@
-<table align="center">
-  <tr>
-    <th><b>Stadium: All Heroes</b></th>
-  </tr>
-</table>
-<p align="center"> An Overwatch Workshop mode written in <a href="https://github.com/ItsDeltin/Overwatch-Script-To-Workshop"><b>📝OSTW</b></a>.</p>
+![Banner](images/Banner.png)
+<p align="center">An Overwatch Workshop mode written in <a href="https://github.com/ItsDeltin/Overwatch-Script-To-Workshop"><b>📝OSTW</b></a>.</p>
 
 <br>
 
